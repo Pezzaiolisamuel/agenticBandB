@@ -1,0 +1,148 @@
+import { buildPublicPageMetadata } from "@/lib/metadata";
+import type { Locale } from "@/lib/locales";
+
+type ContactPageProps = {
+  params: Promise<{ locale: Locale }>;
+};
+
+const fallbackMapEmbedUrl =
+  "https://www.openstreetmap.org/export/embed.html?bbox=8.091%2C45.317%2C8.121%2C45.337&layer=mapnik&marker=45.327%2C8.106";
+
+function getMapEmbedUrl() {
+  const value = process.env.NEXT_PUBLIC_MAP_EMBED_URL;
+
+  if (!value) {
+    return fallbackMapEmbedUrl;
+  }
+
+  try {
+    return new URL(value).toString();
+  } catch {
+    return fallbackMapEmbedUrl;
+  }
+}
+
+export async function generateMetadata({ params }: ContactPageProps) {
+  const { locale } = await params;
+  return buildPublicPageMetadata(locale, "contact");
+}
+
+export default async function ContactPage({ params }: ContactPageProps) {
+  const { locale } = await params;
+  const mapEmbedUrl = getMapEmbedUrl();
+
+  const copy = {
+    it: {
+      eyebrow: "Contatti",
+      title: "Tutti i riferimenti utili per raggiungerci e organizzare il soggiorno.",
+      description:
+        "Qui trovi i contatti principali, la posizione del B&B a Moncrivello e una base chiara per orari di arrivo e partenza.",
+      nameLabel: "Nome struttura",
+      nameValue: "Nome B&B da definire",
+      locationLabel: "Localita`",
+      locationValue: "Moncrivello, Piemonte, Italia",
+      phoneLabel: "Telefono",
+      phoneValue: "+39 000 000 0000",
+      emailLabel: "Email",
+      emailValue: "info@example.com",
+      policyLabel: "Policy check-in / check-out",
+      policyValue: "Check-in dalle 15:00 alle 20:00. Check-out entro le 10:30.",
+      mapTitle: "Mappa e indicazioni",
+      mapBody:
+        "L'iframe qui sotto usa un URL configurabile, cosi` potrai sostituirlo facilmente con Google Maps o OpenStreetMap definitivo.",
+      mapNote: "Configura `NEXT_PUBLIC_MAP_EMBED_URL` per usare il link mappa definitivo.",
+    },
+    en: {
+      eyebrow: "Contact",
+      title: "Everything you need to reach us and plan your stay.",
+      description:
+        "Here you can find the main contact details, the B&B location in Moncrivello, and a clear base for arrival and departure timing.",
+      nameLabel: "Property name",
+      nameValue: "B&B name placeholder",
+      locationLabel: "Location",
+      locationValue: "Moncrivello, Piemonte, Italia",
+      phoneLabel: "Phone",
+      phoneValue: "+39 000 000 0000",
+      emailLabel: "Email",
+      emailValue: "info@example.com",
+      policyLabel: "Check-in / check-out policy",
+      policyValue: "Check-in from 3:00 PM to 8:00 PM. Check-out by 10:30 AM.",
+      mapTitle: "Map and directions",
+      mapBody:
+        "The iframe below uses a configurable URL, so it can easily be replaced later with the final Google Maps or OpenStreetMap link.",
+      mapNote: "Set `NEXT_PUBLIC_MAP_EMBED_URL` to use the final map link.",
+    },
+  } as const;
+
+  const content = copy[locale];
+
+  return (
+    <div className="bg-[linear-gradient(180deg,#faf5ed_0%,#fffdf9_30%,#ffffff_100%)]">
+      <section className="mx-auto max-w-7xl px-5 pb-8 pt-10 sm:px-6 lg:px-8 lg:pb-12 lg:pt-16">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand-700">
+          {content.eyebrow}
+        </p>
+        <h1 className="mt-4 max-w-4xl text-4xl leading-tight text-brand-900 sm:text-5xl lg:text-6xl">
+          {content.title}
+        </h1>
+        <p className="mt-5 max-w-3xl text-base leading-7 text-stone-600 sm:text-lg">
+          {content.description}
+        </p>
+      </section>
+
+      <section className="mx-auto grid max-w-7xl gap-6 px-5 pb-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8 lg:pb-24">
+        <aside className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+          <dl className="space-y-5">
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
+                {content.nameLabel}
+              </dt>
+              <dd className="mt-2 text-2xl text-brand-900">{content.nameValue}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
+                {content.locationLabel}
+              </dt>
+              <dd className="mt-2 text-base leading-7 text-stone-700">{content.locationValue}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
+                {content.phoneLabel}
+              </dt>
+              <dd className="mt-2 text-base leading-7 text-stone-700">{content.phoneValue}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
+                {content.emailLabel}
+              </dt>
+              <dd className="mt-2 text-base leading-7 text-stone-700">{content.emailValue}</dd>
+            </div>
+            <div className="rounded-[1.5rem] bg-stone-50 p-4">
+              <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
+                {content.policyLabel}
+              </dt>
+              <dd className="mt-2 text-base leading-7 text-stone-700">{content.policyValue}</dd>
+            </div>
+          </dl>
+        </aside>
+
+        <article className="overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-sm">
+          <div className="border-b border-stone-200 px-5 py-5 sm:px-6">
+            <h2 className="text-2xl text-brand-900">{content.mapTitle}</h2>
+            <p className="mt-3 max-w-2xl text-base leading-7 text-stone-600">{content.mapBody}</p>
+          </div>
+          <div className="aspect-[4/3] w-full bg-stone-100">
+            <iframe
+              src={mapEmbedUrl}
+              title={content.mapTitle}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="h-full w-full border-0"
+            />
+          </div>
+          <div className="px-5 py-4 text-sm text-stone-500 sm:px-6">{content.mapNote}</div>
+        </article>
+      </section>
+    </div>
+  );
+}

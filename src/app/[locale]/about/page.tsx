@@ -61,6 +61,9 @@ export default async function AboutPage({ params }: AboutPageProps) {
         "Colazione inclusa",
         "B&B con ristorante",
       ],
+      membershipTitle: "Informazione CLUB66",
+      membershipBody:
+        "Il bar CLUB66 e` un circolo ricreativo ARCI con accesso limitato ai membri. Una tessera di iscrizione puo` essere richiesta all interno del bar.",
     },
     en: {
       eyebrow: "About us",
@@ -72,6 +75,9 @@ export default async function AboutPage({ params }: AboutPageProps) {
         "Breakfast included",
         "B&B with restaurant",
       ],
+      membershipTitle: "CLUB66 membership information",
+      membershipBody:
+        "The restaurant CLUB66 is an ARCI recreational club with access limited to members. Membership card inside the bar.",
     },
   } as const;
 
@@ -134,6 +140,15 @@ export default async function AboutPage({ params }: AboutPageProps) {
               ))}
             </div>
           </article>
+        </div>
+
+        <div className="mt-6 rounded-[2rem] border border-stone-200 bg-stone-50 p-6 shadow-sm sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-700">
+            {content.membershipTitle}
+          </p>
+          <p className="mt-3 max-w-4xl text-base leading-7 text-stone-700">
+            {content.membershipBody}
+          </p>
         </div>
       </section>
     </div>

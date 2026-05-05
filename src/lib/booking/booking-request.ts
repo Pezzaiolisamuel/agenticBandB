@@ -7,6 +7,10 @@ import {
   parseIsoDate,
   validateBookingDateRange,
 } from "@/lib/booking/date";
+import {
+  sendAdminNewBookingEmail,
+  sendGuestBookingCreatedEmail,
+} from "@/lib/email/send-email";
 import { logEvent } from "@/lib/logging";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -67,6 +71,11 @@ type PolicyRecord = {
   key: string;
   value_it: string;
   value_en: string;
+};
+
+type RoomEmailRecord = {
+  name_it: string;
+  name_en: string;
 };
 
 type BookingInsert = {
@@ -158,6 +167,25 @@ async function insertBookingWithUniqueCode(booking: Omit<BookingInsert, "booking
   throw new Error("Failed to generate a unique booking code.");
 }
 
+async function getRoomEmailRecord(roomId: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("rooms")
+    .select("name_it, name_en")
+    .eq("id", roomId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error("Requested room could not be loaded for email notifications.");
+  }
+
+  return data as RoomEmailRecord;
+}
+
 export async function createBookingRequest(payload: BookingRequestInput) {
   try {
     const checkIn = parseIsoDate(payload.checkIn);
@@ -189,6 +217,7 @@ export async function createBookingRequest(payload: BookingRequestInput) {
     }
 
     const cancellationPolicySnapshot = await getCancellationPolicySnapshot();
+    const roomEmailRecord = await getRoomEmailRecord(payload.roomId);
     const autoConfirmed = availability.availableRoomsCount > 2;
     const status = autoConfirmed ? "confirmed" : "pending_admin_confirmation";
 
@@ -227,6 +256,29 @@ export async function createBookingRequest(payload: BookingRequestInput) {
         checkOut: payload.checkOut,
       },
     });
+
+    const roomName =
+      payload.language === "en"
+        ? roomEmailRecord.name_en || roomEmailRecord.name_it
+        : roomEmailRecord.name_it || roomEmailRecord.name_en;
+
+    const emailPayload = {
+      bookingCode: booking.booking_code,
+      guestFullName: payload.guestFullName,
+      guestEmail: payload.guestEmail.trim().toLowerCase(),
+      language: payload.language,
+      roomName,
+      checkInDate: payload.checkIn,
+      checkOutDate: payload.checkOut,
+      guestsCount: payload.guestsCount,
+      status: booking.status,
+      totalPriceEur: booking.price_total_eur,
+    } as const;
+
+    await Promise.all([
+      sendAdminNewBookingEmail(emailPayload),
+      sendGuestBookingCreatedEmail(emailPayload),
+    ]);
 
     return {
       bookingId: booking.id,

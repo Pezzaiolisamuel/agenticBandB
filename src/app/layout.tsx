@@ -4,10 +4,15 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Moncrivello B&B",
-    template: "%s | Moncrivello B&B"
+    default: "CLUB66-B&B | Moncrivello, Piemonte",
+    template: "%s | CLUB66-B&B"
   },
-  description: "Bilingual booking platform scaffold for a B&B in Italian and English."
+  description: "CLUB66-B&B is a bilingual hospitality platform for stays, booking requests, and guest support in Moncrivello, Piemonte.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

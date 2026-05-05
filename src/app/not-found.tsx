@@ -12,7 +12,7 @@ export default function NotFound() {
         could not be found.
       </p>
       <Link
-        href="/it"
+        href="/"
         className="mt-8 rounded-full bg-brand-700 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-800"
       >
         Return to the homepage

@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LANGUAGE_COOKIE_NAME, locales, type Locale } from "@/lib/i18n";
+import { buildLocalizedPath, LANGUAGE_COOKIE_NAME, locales, stripLocalePrefix, type Locale } from "@/lib/i18n";
 
 type LocaleSwitcherProps = {
   currentLocale: Locale;
@@ -10,11 +11,25 @@ type LocaleSwitcherProps = {
 export function LocaleSwitcher({ currentLocale }: LocaleSwitcherProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const normalizedPath = pathname === `/${currentLocale}` ? "" : pathname.replace(`/${currentLocale}`, "");
+  const normalizedPath = stripLocalePrefix(pathname);
+  const localeFlags: Record<Locale, { src: string; alt: string; title: string; ariaLabel: string }> = {
+    it: {
+      src: "/italian.png",
+      alt: "Bandiera italiana",
+      title: "Italiano",
+      ariaLabel: "Passa all'italiano",
+    },
+    en: {
+      src: "/english.png",
+      alt: "English flag",
+      title: "English",
+      ariaLabel: "Switch to English",
+    },
+  };
 
   function handleLocaleChange(locale: Locale) {
     document.cookie = `${LANGUAGE_COOKIE_NAME}=${locale}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
-    router.push(`/${locale}${normalizedPath || ""}`);
+    router.push(buildLocalizedPath(locale, normalizedPath));
   }
 
   return (
@@ -27,11 +42,25 @@ export function LocaleSwitcher({ currentLocale }: LocaleSwitcherProps) {
             type="button"
             key={locale}
             onClick={() => handleLocaleChange(locale)}
-            className={`rounded-full px-3 py-1.5 font-semibold ${
-              isActive ? "bg-brand-700 text-white" : "text-stone-600 hover:text-brand-700"
+            className={`flex h-11 w-11 items-center justify-center rounded-full border transition ${
+              isActive
+                ? "scale-110 border-brand-700 bg-brand-700 shadow-sm"
+                : "border-stone-200 bg-white hover:border-brand-400"
             }`}
+            aria-label={localeFlags[locale].ariaLabel}
+            title={localeFlags[locale].title}
           >
-            {locale.toUpperCase()}
+            <span className="overflow-hidden rounded-full">
+              <Image
+                src={localeFlags[locale].src}
+                alt={localeFlags[locale].alt}
+                width={28}
+                height={28}
+                className={`rounded-full object-cover transition ${
+                  isActive ? "h-8 w-8" : "h-7 w-7"
+                }`}
+              />
+            </span>
           </button>
         );
       })}

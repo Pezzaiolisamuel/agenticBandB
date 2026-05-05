@@ -5,6 +5,8 @@ import {
   addAdminNote,
   cancelBooking,
   confirmPendingBooking,
+  markBookingCheckedIn,
+  markBookingCheckedOut,
 } from "@/app/admin/(protected)/bookings/[bookingId]/actions";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -51,8 +53,15 @@ type AuditLogEntry = {
   user_message: string | null;
 };
 
+type BookingEventEntry = {
+  id: string;
+  event_type: string;
+  note: string | null;
+  created_at: string;
+};
+
 function formatPrice(value: number | string) {
-  return new Intl.NumberFormat("en-GB", {
+  return new Intl.NumberFormat("it-IT", {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,
@@ -60,16 +69,16 @@ function formatPrice(value: number | string) {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "numeric",
     month: "short",
     year: "numeric",
   }).format(new Date(`${value}T00:00:00.000Z`));
 }
 
 function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "numeric",
     month: "short",
     year: "numeric",
     hour: "2-digit",
@@ -115,6 +124,20 @@ async function getAuditLog(bookingId: string) {
   };
 }
 
+async function getBookingEvents(bookingId: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("booking_events")
+    .select("id, event_type, note, created_at")
+    .eq("booking_id", bookingId)
+    .order("created_at", { ascending: false });
+
+  return {
+    entries: (data ?? []) as BookingEventEntry[],
+    error,
+  };
+}
+
 function getRoomName(rooms: BookingDetail["rooms"]) {
   const room = rooms?.[0];
 
@@ -140,6 +163,45 @@ function formatStatus(status: string) {
   }
 }
 
+function getStatusBadgeClasses(status: string) {
+  switch (status) {
+    case "confirmed":
+      return "bg-emerald-100 text-emerald-800";
+    case "pending_admin_confirmation":
+      return "bg-amber-100 text-amber-800";
+    case "cancelled":
+      return "bg-rose-100 text-rose-800";
+    case "completed":
+      return "bg-sky-100 text-sky-800";
+    default:
+      return "bg-stone-200 text-stone-700";
+  }
+}
+
+function formatSource(source: string) {
+  switch (source) {
+    case "website":
+      return "Sito web";
+    case "phone":
+      return "Telefono";
+    case "admin":
+      return "Admin";
+    default:
+      return source;
+  }
+}
+
+function formatLanguage(language: string) {
+  switch (language) {
+    case "it":
+      return "Italiano";
+    case "en":
+      return "Inglese";
+    default:
+      return language;
+  }
+}
+
 function formatEventType(eventType: string | null | undefined) {
   if (!eventType) {
     return "Evento di audit";
@@ -157,15 +219,31 @@ function formatEventType(eventType: string | null | undefined) {
   }
 }
 
+function formatBookingEventType(eventType: string) {
+  switch (eventType) {
+    case "checked_in":
+      return "Check-in registrato";
+    case "checked_out":
+      return "Check-out registrato";
+    default:
+      return eventType;
+  }
+}
+
 export default async function BookingDetailPage({
   params,
   searchParams,
 }: BookingDetailPageProps) {
   const { bookingId } = await params;
   const { error: actionError, success } = await searchParams;
-  const [{ booking, error: bookingError }, { entries, error: auditError }] = await Promise.all([
+  const [
+    { booking, error: bookingError },
+    { entries, error: auditError },
+    { entries: bookingEvents, error: bookingEventsError },
+  ] = await Promise.all([
     getBooking(bookingId),
     getAuditLog(bookingId),
+    getBookingEvents(bookingId),
   ]);
 
   if (bookingError) {
@@ -180,10 +258,9 @@ export default async function BookingDetailPage({
         <article className="rounded-[1.8rem] border border-rose-200 bg-rose-50 p-6">
           <h1 className="text-2xl text-rose-900">Impossibile caricare i dettagli della prenotazione</h1>
           <p className="mt-3 text-sm leading-6 text-rose-800">
-            Si e verificato un problema durante la lettura della prenotazione da Supabase.
-            Controlla lo schema e riprova.
+            Si e verificato un problema durante il caricamento della prenotazione. Riprova tra poco
+            oppure controlla i log server se il problema continua.
           </p>
-          <p className="mt-3 text-xs text-rose-700">{bookingError.message}</p>
         </article>
       </section>
     );
@@ -195,27 +272,31 @@ export default async function BookingDetailPage({
 
   const fields = [
     { label: "Codice prenotazione", value: booking.booking_code },
-    { label: "Ospite", value: booking.guest_full_name },
-    { label: "Email", value: booking.guest_email },
-    { label: "Telefono", value: booking.guest_phone || "Non fornito" },
-    { label: "Camera", value: getRoomName(booking.rooms) },
-    { label: "Stato", value: formatStatus(booking.status) },
-    { label: "Origine", value: booking.source },
-    { label: "Lingua", value: booking.language },
-    { label: "Ospiti", value: String(booking.guests_count) },
-    { label: "Check-in", value: formatDate(booking.check_in_date) },
-    { label: "Check-out", value: formatDate(booking.check_out_date) },
-    { label: "Notti", value: String(booking.nights) },
-    { label: "Prezzo", value: formatPrice(booking.price_total_eur) },
+    { label: "ID prenotazione", value: booking.id },
+    { label: "Origine", value: formatSource(booking.source) },
     { label: "Conferma automatica", value: booking.auto_confirmed ? "Si" : "No" },
+    { label: "Nome completo ospite", value: booking.guest_full_name },
+    { label: "Email ospite", value: booking.guest_email },
+    { label: "Telefono ospite", value: booking.guest_phone || "Non fornito" },
+    { label: "Lingua", value: formatLanguage(booking.language) },
+    { label: "Camera", value: getRoomName(booking.rooms) },
+    { label: "Numero ospiti", value: String(booking.guests_count) },
+    { label: "Data check-in", value: formatDate(booking.check_in_date) },
+    { label: "Data check-out", value: formatDate(booking.check_out_date) },
+    { label: "Notti", value: String(booking.nights) },
+    { label: "Prezzo totale", value: formatPrice(booking.price_total_eur) },
     { label: "Consenso privacy", value: booking.consent_privacy ? "Si" : "No" },
     { label: "Consenso cookie", value: booking.consent_cookies ? "Si" : "No" },
-    { label: "Creata il", value: formatDateTime(booking.created_at) },
+    { label: "Prenotazione creata il", value: formatDateTime(booking.created_at) },
     { label: "Aggiornata il", value: formatDateTime(booking.updated_at) },
   ];
 
   const canConfirm = booking.status === "pending_admin_confirmation";
   const canCancel = booking.status !== "cancelled";
+  const hasCheckedIn = bookingEvents.some((entry) => entry.event_type === "checked_in");
+  const hasCheckedOut = bookingEvents.some((entry) => entry.event_type === "checked_out");
+  const canCheckIn = booking.status !== "cancelled" && !hasCheckedIn;
+  const canCheckOut = hasCheckedIn && !hasCheckedOut && booking.status !== "cancelled";
 
   return (
     <section className="space-y-8">
@@ -235,7 +316,16 @@ export default async function BookingDetailPage({
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-700">
             Dettaglio prenotazione
           </p>
-          <h1 className="mt-3 text-4xl leading-tight text-brand-900">{booking.booking_code}</h1>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <h1 className="text-4xl leading-tight text-brand-900">{booking.booking_code}</h1>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${getStatusBadgeClasses(
+                booking.status,
+              )}`}
+            >
+              {formatStatus(booking.status)}
+            </span>
+          </div>
         </div>
         <Link
           href="/admin/bookings"
@@ -312,6 +402,28 @@ export default async function BookingDetailPage({
                 </button>
               </form>
 
+              <form action={markBookingCheckedIn}>
+                <input type="hidden" name="bookingId" value={booking.id} />
+                <button
+                  type="submit"
+                  disabled={!canCheckIn}
+                  className="inline-flex w-full items-center justify-center rounded-full bg-sky-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Registra check-in
+                </button>
+              </form>
+
+              <form action={markBookingCheckedOut}>
+                <input type="hidden" name="bookingId" value={booking.id} />
+                <button
+                  type="submit"
+                  disabled={!canCheckOut}
+                  className="inline-flex w-full items-center justify-center rounded-full bg-violet-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Registra check-out
+                </button>
+              </form>
+
               <form action={cancelBooking}>
                 <input type="hidden" name="bookingId" value={booking.id} />
                 <button
@@ -348,12 +460,43 @@ export default async function BookingDetailPage({
 
           <article className="rounded-[1.8rem] border border-stone-200 bg-white p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">
+              Storico check-in / check-out
+            </p>
+            {bookingEventsError ? (
+              <p className="mt-4 text-sm leading-6 text-stone-600">
+                Lo storico operativo non e disponibile in questo momento.
+              </p>
+            ) : bookingEvents.length === 0 ? (
+              <p className="mt-4 text-sm leading-6 text-stone-600">
+                Nessun evento operativo registrato per questa prenotazione.
+              </p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {bookingEvents.map((event) => (
+                  <article key={event.id} className="rounded-[1.4rem] bg-stone-50 p-4">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm font-semibold text-brand-900">
+                        {formatBookingEventType(event.event_type)}
+                      </p>
+                      <p className="text-xs text-stone-500">{formatDateTime(event.created_at)}</p>
+                    </div>
+                    {event.note ? (
+                      <p className="mt-3 text-sm leading-6 text-stone-700">{event.note}</p>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+            )}
+          </article>
+
+          <article className="rounded-[1.8rem] border border-stone-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">
               Registro di audit
             </p>
             {auditError ? (
               <p className="mt-4 text-sm leading-6 text-stone-600">
                 Il registro di audit non e disponibile in questo momento. La prenotazione e stata
-                caricata correttamente, ma la query del audit richiede attenzione.
+                caricata correttamente, ma il log non puo essere mostrato adesso.
               </p>
             ) : entries.length === 0 ? (
               <p className="mt-4 text-sm leading-6 text-stone-600">

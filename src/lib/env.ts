@@ -1,5 +1,9 @@
 type PublicEnvName = "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_ANON_KEY";
-type ServerEnvName = "SUPABASE_SERVICE_ROLE_KEY" | "OPENAI_API_KEY";
+type ServerEnvName =
+  | "SUPABASE_SERVICE_ROLE_KEY"
+  | "OPENAI_API_KEY"
+  | "RESEND_API_KEY"
+  | "ADMIN_BOOKING_EMAIL";
 
 function missingEnvError(name: string) {
   return new Error(
@@ -63,4 +67,22 @@ export function getOpenAIApiKey() {
   }
 
   return readRequiredServerEnv("OPENAI_API_KEY");
+}
+
+export function getResendApiKey() {
+  if (typeof window !== "undefined") {
+    throw new Error("RESEND_API_KEY is server-only and must never be accessed from the browser.");
+  }
+
+  return readRequiredServerEnv("RESEND_API_KEY");
+}
+
+export function getAdminBookingEmail() {
+  if (typeof window !== "undefined") {
+    throw new Error(
+      "ADMIN_BOOKING_EMAIL is server-only and must never be accessed from the browser.",
+    );
+  }
+
+  return readRequiredServerEnv("ADMIN_BOOKING_EMAIL");
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -59,10 +60,20 @@ export function AdminLoginForm({ error }: AdminLoginFormProps) {
       onSubmit={handleSubmit}
       className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm sm:p-8"
     >
+      <div className="flex items-center gap-3">
+        <Image
+          src="/logo.png"
+          alt="CLUB66-B&B"
+          width={40}
+          height={40}
+          className="h-10 w-10 rounded-full object-cover"
+        />
+        <span className="text-lg text-brand-900">CLUB66-B&B</span>
+      </div>
       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-700">
         Accesso admin
       </p>
-      <h1 className="mt-3 text-4xl leading-tight text-brand-900">Accedi a Moncrivello B&B</h1>
+      <h1 className="mt-3 text-4xl leading-tight text-brand-900">Accedi a CLUB66-B&B</h1>
       <p className="mt-3 text-base leading-7 text-stone-600">
         Usa il tuo account Supabase Auth. Solo gli utenti presenti in <code>admin_profiles</code>{" "}
         possono entrare nella area admin.

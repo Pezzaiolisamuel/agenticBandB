@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { defaultLocale, isSupportedLocale, type Locale } from "@/lib/locales";
+import { buildLocalizedPath, defaultLocale, isSupportedLocale, type Locale } from "@/lib/locales";
 
 const CONSENT_STORAGE_KEY = "cookie-consent";
 const VISITOR_ID_STORAGE_KEY = "visitor-id";
@@ -148,7 +148,7 @@ export function CookieConsentBanner() {
             <h2 className="text-lg text-brand-900">{content.title}</h2>
             <p className="mt-2 text-sm leading-6 text-stone-600">{content.body}</p>
             <Link
-              href={`/${locale}/cookie-policy`}
+              href={buildLocalizedPath(locale, "/cookie-policy")}
               className="mt-3 inline-flex text-sm font-semibold text-brand-700 hover:text-brand-900"
             >
               {content.policy}

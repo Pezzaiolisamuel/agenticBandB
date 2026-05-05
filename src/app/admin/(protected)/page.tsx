@@ -84,7 +84,7 @@ export default async function AdminDashboardPage() {
         <h1 className="mt-3 text-4xl leading-tight text-brand-900">Panoramica operativa</h1>
         <p className="mt-3 max-w-3xl text-base leading-7 text-stone-600">
           Una vista rapida del flusso prenotazioni, dei soggiorni confermati in arrivo e
-          del inventario camere attive di Moncrivello B&B.
+          del inventario camere attive di Club66.
         </p>
       </section>
 

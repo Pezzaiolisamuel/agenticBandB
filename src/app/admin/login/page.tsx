@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { AdminLoginForm } from "@/components/admin-login-form";
 
 type AdminLoginPageProps = {
@@ -15,6 +16,16 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-200">
               Area admin
             </p>
+            <div className="mt-4 flex items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="CLUB66-B&B"
+                width={48}
+                height={48}
+                className="h-12 w-12 rounded-full object-cover"
+              />
+              <span className="text-lg text-brand-100">CLUB66-B&B</span>
+            </div>
             <h1 className="mt-4 text-4xl leading-tight text-white">
               Accesso protetto riservato allo staff
             </h1>

@@ -2,6 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  CLOSE_VOICE_EVENT,
+  OPEN_CHAT_EVENT,
+  OPEN_VOICE_EVENT,
+  openVoiceAssistant,
+} from "@/lib/assistant-ui";
 import type { Locale } from "@/lib/locales";
 
 type VoiceAssistantProps = {
@@ -34,6 +40,7 @@ type ConnectionState = "idle" | "requesting-mic" | "connecting" | "connected" | 
 
 const maxActivityLines = 6;
 const voiceSessionStorageKey = "bnb_voice_session_id";
+const automaticGreeting = "Salve, come posso aiutarti?";
 
 function appendActivity(current: string[], nextLine: string) {
   return [...current, nextLine].slice(-maxActivityLines);
@@ -87,6 +94,7 @@ function getFriendlyEventLine(event: RealtimeServerEvent) {
 }
 
 export function VoiceAssistant({ locale }: VoiceAssistantProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
   const [isMuted, setIsMuted] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -98,16 +106,19 @@ export function VoiceAssistant({ locale }: VoiceAssistantProps) {
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const handledToolCallsRef = useRef<Set<string>>(new Set());
+  const greetingSentRef = useRef(false);
 
   const copy = useMemo(
     () =>
       locale === "en"
         ? {
             title: "Voice assistant",
+            button: "Talk to the assistant",
             start: "Start voice",
             stop: "Stop",
             mute: "Mute",
             unmute: "Unmute",
+            close: "Close",
             idle: "Ready to start",
             requestingMic: "Requesting microphone access...",
             connecting: "Connecting...",
@@ -126,10 +137,12 @@ export function VoiceAssistant({ locale }: VoiceAssistantProps) {
           }
         : {
             title: "Assistente vocale",
+            button: "Parla con l'assistente",
             start: "Avvia voce",
             stop: "Ferma",
             mute: "Disattiva microfono",
             unmute: "Riattiva microfono",
+            close: "Chiudi",
             idle: "Pronto per iniziare",
             requestingMic: "Richiesta accesso al microfono...",
             connecting: "Connessione in corso...",
@@ -257,8 +270,14 @@ export function VoiceAssistant({ locale }: VoiceAssistantProps) {
     }
 
     handledToolCallsRef.current.clear();
+    greetingSentRef.current = false;
     setConnectionState("idle");
     setIsMuted(false);
+  }
+
+  function closePanel() {
+    stopSession();
+    setIsOpen(false);
   }
 
   async function startSession() {
@@ -355,6 +374,20 @@ export function VoiceAssistant({ locale }: VoiceAssistantProps) {
 
       dataChannel.onopen = () => {
         setActivity((current) => appendActivity(current, copy.connected));
+
+        if (greetingSentRef.current) {
+          return;
+        }
+
+        greetingSentRef.current = true;
+        dataChannel.send(
+          JSON.stringify({
+            type: "response.create",
+            response: {
+              instructions: `Greet the user in Italian by saying exactly: "${automaticGreeting}"`,
+            },
+          }),
+        );
       };
 
       dataChannel.onmessage = (event) => {
@@ -458,76 +491,127 @@ export function VoiceAssistant({ locale }: VoiceAssistantProps) {
   }, []);
 
   useEffect(() => {
+    function handleOpenVoice() {
+      setIsOpen(true);
+    }
+
+    function handleCloseVoice() {
+      stopSession();
+      setIsOpen(false);
+    }
+
+    function handleOpenChat() {
+      stopSession();
+      setIsOpen(false);
+    }
+
+    window.addEventListener(OPEN_VOICE_EVENT, handleOpenVoice);
+    window.addEventListener(CLOSE_VOICE_EVENT, handleCloseVoice);
+    window.addEventListener(OPEN_CHAT_EVENT, handleOpenChat);
+
+    return () => {
+      window.removeEventListener(OPEN_VOICE_EVENT, handleOpenVoice);
+      window.removeEventListener(CLOSE_VOICE_EVENT, handleCloseVoice);
+      window.removeEventListener(OPEN_CHAT_EVENT, handleOpenChat);
+    };
+  }, []);
+
+  useEffect(() => {
     return () => {
       stopSession();
     };
   }, []);
 
   return (
-    <section className="fixed bottom-4 left-4 z-40 w-[min(22rem,calc(100vw-2rem))] rounded-[1.8rem] border border-stone-200 bg-white p-4 shadow-[0_30px_80px_-40px_rgba(39,29,21,0.55)] sm:bottom-6 sm:left-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-base text-brand-900">{copy.title}</h2>
-          <p className="mt-1 text-xs leading-5 text-stone-600">{copy.disclosure}</p>
-        </div>
-        <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700">
-          {statusText}
-        </span>
-      </div>
+    <div className="fixed bottom-4 left-4 z-40 flex flex-col items-start gap-3 sm:bottom-6 sm:left-6">
+      {isOpen ? (
+        <section className="w-[min(22rem,calc(100vw-2rem))] rounded-[1.8rem] border border-stone-200 bg-white p-4 shadow-[0_30px_80px_-40px_rgba(39,29,21,0.55)]">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base text-brand-900">{copy.title}</h2>
+              <p className="mt-1 text-xs leading-5 text-stone-600">{copy.disclosure}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700">
+                {statusText}
+              </span>
+              <button
+                type="button"
+                onClick={closePanel}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-300 text-sm text-stone-700 transition hover:border-brand-500 hover:text-brand-900"
+                aria-label={copy.close}
+              >
+                x
+              </button>
+            </div>
+          </div>
 
-      <p className="mt-3 text-sm leading-6 text-stone-600">{copy.helper}</p>
+          <p className="mt-3 text-sm leading-6 text-stone-600">{copy.helper}</p>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={startSession}
-          disabled={
-            !sessionId ||
-            connectionState === "requesting-mic" ||
-            connectionState === "connecting"
-          }
-          className="inline-flex items-center justify-center rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {copy.start}
-        </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={startSession}
+              disabled={
+                !sessionId ||
+                connectionState === "requesting-mic" ||
+                connectionState === "connecting"
+              }
+              className="inline-flex items-center justify-center rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {copy.start}
+            </button>
 
-        <button
-          type="button"
-          onClick={stopSession}
-          disabled={connectionState === "idle"}
-          className="inline-flex items-center justify-center rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-brand-900 transition hover:border-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {copy.stop}
-        </button>
+            <button
+              type="button"
+              onClick={stopSession}
+              disabled={connectionState === "idle"}
+              className="inline-flex items-center justify-center rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-brand-900 transition hover:border-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {copy.stop}
+            </button>
 
-        <button
-          type="button"
-          onClick={toggleMute}
-          disabled={connectionState === "idle"}
-          className="inline-flex items-center justify-center rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-brand-900 transition hover:border-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isMuted ? copy.unmute : copy.mute}
-        </button>
-      </div>
+            <button
+              type="button"
+              onClick={toggleMute}
+              disabled={connectionState === "idle"}
+              className="inline-flex items-center justify-center rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-brand-900 transition hover:border-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isMuted ? copy.unmute : copy.mute}
+            </button>
+          </div>
 
-      <div className="mt-4 rounded-[1.3rem] border border-stone-200 bg-stone-50 p-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">
-          {copy.activityTitle}
-        </p>
-        <div className="mt-2 space-y-2 text-sm leading-6 text-stone-700">
-          {activity.length > 0 ? (
-            activity.map((line, index) => <p key={`${line}-${index}`}>{line}</p>)
-          ) : (
-            <p>{statusText}</p>
-          )}
-        </div>
-      </div>
+          <div className="mt-4 rounded-[1.3rem] border border-stone-200 bg-stone-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">
+              {copy.activityTitle}
+            </p>
+            <div className="mt-2 space-y-2 text-sm leading-6 text-stone-700">
+              {activity.length > 0 ? (
+                activity.map((line, index) => <p key={`${line}-${index}`}>{line}</p>)
+              ) : (
+                <p>{statusText}</p>
+              )}
+            </div>
+          </div>
 
-      {error ? (
-        <div className="mt-4 rounded-[1.3rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {error}
-        </div>
+          {error ? (
+            <div className="mt-4 rounded-[1.3rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {error}
+            </div>
+          ) : null}
+        </section>
       ) : null}
-    </section>
+
+      {!isOpen ? (
+        <button
+          type="button"
+          onClick={() => openVoiceAssistant()}
+          className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(39,29,21,0.8)] transition hover:bg-brand-800"
+        >
+          <span aria-hidden="true">☎</span>
+          <span>{copy.button}</span>
+        </button>
+      ) : null}
+    </div>
   );
 }

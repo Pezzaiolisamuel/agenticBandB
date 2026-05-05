@@ -6,7 +6,7 @@ type ContactPageProps = {
 };
 
 const fallbackMapEmbedUrl =
-  "https://www.openstreetmap.org/export/embed.html?bbox=8.091%2C45.317%2C8.121%2C45.337&layer=mapnik&marker=45.327%2C8.106";
+  "https://maps.google.com/maps?q=1%20Via%20Roma%2C%20Moncrivello%2C%20Piemonte%2C%20Italia&z=16&output=embed";
 
 function getMapEmbedUrl() {
   const value = process.env.NEXT_PUBLIC_MAP_EMBED_URL;
@@ -36,11 +36,11 @@ export default async function ContactPage({ params }: ContactPageProps) {
       eyebrow: "Contatti",
       title: "Tutti i riferimenti utili per raggiungerci e organizzare il soggiorno.",
       description:
-        "Qui trovi i contatti principali, la posizione del B&B a Moncrivello e una base chiara per orari di arrivo e partenza.",
+        "Qui trovi i contatti principali, l'indirizzo del B&B a Moncrivello e una base chiara per orari di arrivo e partenza.",
       nameLabel: "Nome struttura",
-      nameValue: "Nome B&B da definire",
-      locationLabel: "Localita`",
-      locationValue: "Moncrivello, Piemonte, Italia",
+      nameValue: "CLUB66-B&B",
+      locationLabel: "Indirizzo",
+      locationValue: "1 Via Roma\nMoncrivello, Piemonte\nItalia",
       phoneLabel: "Telefono",
       phoneValue: "+39 000 000 0000",
       emailLabel: "Email",
@@ -49,18 +49,18 @@ export default async function ContactPage({ params }: ContactPageProps) {
       policyValue: "Check-in dalle 15:00 alle 20:00. Check-out entro le 10:30.",
       mapTitle: "Mappa e indicazioni",
       mapBody:
-        "L'iframe qui sotto usa un URL configurabile, cosi` potrai sostituirlo facilmente con Google Maps o OpenStreetMap definitivo.",
-      mapNote: "Configura `NEXT_PUBLIC_MAP_EMBED_URL` per usare il link mappa definitivo.",
+        "Trovi qui sotto la posizione del B&B in Via Roma 1, nel centro di Moncrivello, per raggiungerci con facilita` e organizzare al meglio l'arrivo.",
+      mapNote: "Via Roma 1, Moncrivello, Piemonte, Italia.",
     },
     en: {
       eyebrow: "Contact",
       title: "Everything you need to reach us and plan your stay.",
       description:
-        "Here you can find the main contact details, the B&B location in Moncrivello, and a clear base for arrival and departure timing.",
+        "Here you can find the main contact details, the B&B address in Moncrivello, and a clear base for arrival and departure timing.",
       nameLabel: "Property name",
-      nameValue: "B&B name placeholder",
-      locationLabel: "Location",
-      locationValue: "Moncrivello, Piemonte, Italia",
+      nameValue: "CLUB66-B&B",
+      locationLabel: "Address",
+      locationValue: "1 Via Roma\nMoncrivello, Piemonte\nItalia",
       phoneLabel: "Phone",
       phoneValue: "+39 000 000 0000",
       emailLabel: "Email",
@@ -69,8 +69,8 @@ export default async function ContactPage({ params }: ContactPageProps) {
       policyValue: "Check-in from 3:00 PM to 8:00 PM. Check-out by 10:30 AM.",
       mapTitle: "Map and directions",
       mapBody:
-        "The iframe below uses a configurable URL, so it can easily be replaced later with the final Google Maps or OpenStreetMap link.",
-      mapNote: "Set `NEXT_PUBLIC_MAP_EMBED_URL` to use the final map link.",
+        "Below you can find the B&B location at Via Roma 1 in the center of Moncrivello, making it easy to plan your route and arrival.",
+      mapNote: "Via Roma 1, Moncrivello, Piemonte, Italia.",
     },
   } as const;
 
@@ -103,7 +103,9 @@ export default async function ContactPage({ params }: ContactPageProps) {
               <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
                 {content.locationLabel}
               </dt>
-              <dd className="mt-2 text-base leading-7 text-stone-700">{content.locationValue}</dd>
+              <dd className="mt-2 whitespace-pre-line text-base leading-7 text-stone-700">
+                {content.locationValue}
+              </dd>
             </div>
             <div>
               <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">

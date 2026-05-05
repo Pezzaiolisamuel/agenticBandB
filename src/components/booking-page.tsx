@@ -134,6 +134,9 @@ export function BookingPage({ initialRoomId, locale }: BookingPageProps) {
       genericBookingError: "Non siamo riusciti a creare la prenotazione. Riprova tra poco.",
       availabilityError: "Non siamo riusciti a recuperare la disponibilita`.",
       roomChoiceHelper: "Le camere disponibili mostrano il totale calcolato direttamente dal server.",
+      membershipTitle: "Informazione CLUB66",
+      membershipBody:
+        "Il bar CLUB66 e` un circolo ricreativo ARCI con accesso limitato ai membri. Una tessera di iscrizione puo` essere richiesta all interno del bar.",
     },
     en: {
       eyebrow: "Booking",
@@ -180,6 +183,9 @@ export function BookingPage({ initialRoomId, locale }: BookingPageProps) {
       genericBookingError: "We could not create the booking. Please try again shortly.",
       availabilityError: "We could not load availability.",
       roomChoiceHelper: "Available rooms show totals calculated directly on the server.",
+      membershipTitle: "CLUB66 membership information",
+      membershipBody:
+        "The restaurant CLUB66 is an ARCI recreational club with access limited to members. Membership card inside the bar.",
     },
   } as const;
 
@@ -614,6 +620,17 @@ export function BookingPage({ initialRoomId, locale }: BookingPageProps) {
               </>
             )}
           </aside>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-5 pb-14 sm:px-6 lg:px-8 lg:pb-24">
+        <div className="rounded-[2rem] border border-stone-200 bg-stone-50 p-6 shadow-sm sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-700">
+            {content.membershipTitle}
+          </p>
+          <p className="mt-3 max-w-4xl text-base leading-7 text-stone-700">
+            {content.membershipBody}
+          </p>
         </div>
       </section>
     </div>

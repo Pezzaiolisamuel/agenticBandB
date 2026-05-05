@@ -2,6 +2,12 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import {
+  CLOSE_CHAT_EVENT,
+  OPEN_CHAT_EVENT,
+  OPEN_VOICE_EVENT,
+  openChatAssistant,
+} from "@/lib/assistant-ui";
 import type { Locale } from "@/lib/locales";
 
 const chatSessionStorageKey = "bnb_chat_session_id";
@@ -96,6 +102,30 @@ export function ChatWidget({ locale }: ChatWidgetProps) {
 
   useEffect(() => {
     setSessionId(getOrCreateSessionId());
+  }, []);
+
+  useEffect(() => {
+    function handleOpenChat() {
+      setIsOpen(true);
+    }
+
+    function handleCloseChat() {
+      setIsOpen(false);
+    }
+
+    function handleVoiceOpen() {
+      setIsOpen(false);
+    }
+
+    window.addEventListener(OPEN_CHAT_EVENT, handleOpenChat);
+    window.addEventListener(CLOSE_CHAT_EVENT, handleCloseChat);
+    window.addEventListener(OPEN_VOICE_EVENT, handleVoiceOpen);
+
+    return () => {
+      window.removeEventListener(OPEN_CHAT_EVENT, handleOpenChat);
+      window.removeEventListener(CLOSE_CHAT_EVENT, handleCloseChat);
+      window.removeEventListener(OPEN_VOICE_EVENT, handleVoiceOpen);
+    };
   }, []);
 
   useEffect(() => {
@@ -287,13 +317,15 @@ export function ChatWidget({ locale }: ChatWidgetProps) {
         </section>
       ) : null}
 
-      <button
-        type="button"
-        onClick={() => setIsOpen((current) => !current)}
-        className="ml-auto inline-flex items-center justify-center rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(39,29,21,0.8)] transition hover:bg-brand-800"
-      >
-        {copy.button}
-      </button>
+      {!isOpen ? (
+        <button
+          type="button"
+          onClick={() => openChatAssistant()}
+          className="ml-auto inline-flex items-center justify-center rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(39,29,21,0.8)] transition hover:bg-brand-800"
+        >
+          {copy.button}
+        </button>
+      ) : null}
     </div>
   );
 }

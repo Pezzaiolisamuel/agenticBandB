@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { buildPublicPageMetadata } from "@/lib/metadata";
 import {
+  buildLocalizedPath,
   getDictionary,
   getLocalizedWithItalianFallback,
   type Locale,
@@ -220,7 +221,7 @@ export default async function RoomsPage({ params }: RoomsPageProps) {
                       </dl>
 
                       <Link
-                        href={`/${locale}/booking?roomId=${room.id}`}
+                        href={buildLocalizedPath(locale, `/booking?roomId=${room.id}`)}
                         className="mt-6 inline-flex items-center justify-center rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-800"
                       >
                         {content.bookCta}

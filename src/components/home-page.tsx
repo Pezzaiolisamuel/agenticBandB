@@ -1,6 +1,8 @@
 import Link from "next/link";
 
-import { getLocalizedWithItalianFallback, type Locale } from "@/lib/i18n";
+import { HomeAssistantActions } from "@/components/home-assistant-actions";
+import { buildLocalizedPath, getLocalizedWithItalianFallback, type Locale } from "@/lib/i18n";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type HomePageProps = {
   locale: Locale;
@@ -16,6 +18,9 @@ type RoomPreview = {
   detailsEn?: string;
   accentFrom: string;
   accentTo: string;
+  imageSrc?: string | null;
+  imageAltIt?: string | null;
+  imageAltEn?: string | null;
 };
 
 const roomPreviews: RoomPreview[] = [
@@ -69,7 +74,7 @@ const homeContent = {
     eyebrow: "Moncrivello, Piemonte",
     title: "Un B&B raccolto, luminoso e semplice da prenotare.",
     description:
-      "Moncrivello B&B nasce per soggiorni lenti tra campagna piemontese, colazione inclusa e un'accoglienza bilingue pensata per ospiti italiani e internazionali.",
+      "Il nostro B&B nasce per soggiorni lenti tra campagna piemontese, colazione inclusa e un'accoglienza pensata per ospiti da tutto il mondo.",
     primaryCta: "Controlla disponibilita`",
     secondaryCta: "Parla con l'assistente",
     helper: "Italiano di default, English available in one tap.",
@@ -95,7 +100,7 @@ const homeContent = {
     eyebrow: "Moncrivello, Piemonte",
     title: "A calm, light-filled B&B that is easy to book.",
     description:
-      "Moncrivello B&B is designed for slower stays in the Piemonte countryside, with breakfast included and bilingual hospitality for Italian and international guests.",
+      "Our B&B is designed for slower stays in the Piemonte countryside, with breakfast included and Italian hospitality tailored for guests from around the world.",
     primaryCta: "Check availability",
     secondaryCta: "Chat with the assistant",
     helper: "Italian is the default language, with English always available.",
@@ -119,8 +124,46 @@ const homeContent = {
   },
 } as const;
 
-export function HomePage({ locale }: HomePageProps) {
+type RoomPreviewImage = {
+  storage_path: string;
+  alt_it: string | null;
+  alt_en: string | null;
+  sort_order: number;
+};
+
+async function getRoomPreviewImages() {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("rooms")
+    .select("room_images(storage_path, alt_it, alt_en, sort_order)")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("sort_order", { foreignTable: "room_images", ascending: true });
+
+  if (error) {
+    console.error("Failed to load home room preview images:", error);
+    return [];
+  }
+
+  return (data ?? [])
+    .map((room) => room.room_images?.[0] ?? null)
+    .filter((image): image is RoomPreviewImage => Boolean(image))
+    .slice(0, roomPreviews.length);
+}
+
+export async function HomePage({ locale }: HomePageProps) {
   const content = homeContent[locale] ?? homeContent.it;
+  const roomPreviewImages = await getRoomPreviewImages();
+  const roomCards = roomPreviews.map((room, index) => {
+    const image = roomPreviewImages[index];
+
+    return {
+      ...room,
+      imageSrc: image?.storage_path ?? null,
+      imageAltIt: image?.alt_it ?? room.nameIt,
+      imageAltEn: image?.alt_en ?? room.nameEn ?? room.nameIt,
+    };
+  });
 
   return (
     <div className="overflow-hidden bg-[linear-gradient(180deg,#f7f3ec_0%,#fcfbf7_26%,#ffffff_100%)]">
@@ -139,17 +182,16 @@ export function HomePage({ locale }: HomePageProps) {
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link
-                href={`/${locale}/booking`}
+                href={buildLocalizedPath(locale, "/booking")}
                 className="inline-flex items-center justify-center rounded-full bg-brand-700 px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-18px_rgba(39,29,21,0.75)] transition hover:bg-brand-800"
               >
                 {content.primaryCta}
               </Link>
-              <Link
-                href="#assistant"
+              <HomeAssistantActions
+                label={content.secondaryCta}
+                mode="voice"
                 className="inline-flex items-center justify-center rounded-full border border-brand-300 bg-white/80 px-6 py-3 text-sm font-semibold text-brand-900 backdrop-blur transition hover:border-brand-500"
-              >
-                {content.secondaryCta}
-              </Link>
+              />
             </div>
             <div className="mt-5 flex flex-col gap-3 text-sm text-stone-600 sm:flex-row sm:flex-wrap sm:items-center">
               <span className="inline-flex w-fit items-center rounded-full bg-white/85 px-3 py-1.5 shadow-sm ring-1 ring-black/5">
@@ -162,17 +204,44 @@ export function HomePage({ locale }: HomePageProps) {
           <div className="relative z-10">
             <div className="rounded-[2rem] border border-white/70 bg-white/70 p-4 shadow-[0_30px_80px_-35px_rgba(39,29,21,0.45)] backdrop-blur sm:p-5">
               <div className="grid gap-4 sm:grid-cols-2">
-                {roomPreviews.map((room, index) => (
+                {roomCards.map((room, index) => (
                   <article
                     key={room.slug}
                     className={`overflow-hidden rounded-[1.6rem] border border-stone-200/70 bg-gradient-to-br ${room.accentFrom} ${room.accentTo} p-4`}
                   >
-                    <div className="flex h-32 items-end rounded-[1.1rem] bg-white/35 p-3 shadow-inner ring-1 ring-white/30 sm:h-36">
-                      <div>
-                        <p className="text-[11px] uppercase tracking-[0.22em] text-brand-800/70">
+                    <div className="relative h-32 overflow-hidden rounded-[1.1rem] bg-white/35 shadow-inner ring-1 ring-white/30 sm:h-36">
+                      {room.imageSrc ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={room.imageSrc}
+                          alt={getLocalizedWithItalianFallback(
+                            locale,
+                            room.imageAltIt ?? room.nameIt,
+                            room.imageAltEn ?? room.nameEn,
+                          )}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-full bg-white/35" />
+                      )}
+                      <div
+                        className={`absolute inset-0 ${
+                          room.imageSrc
+                            ? "bg-gradient-to-t from-black/45 via-black/10 to-transparent"
+                            : "bg-gradient-to-t from-white/15 via-white/5 to-transparent"
+                        }`}
+                      />
+                      <div className="absolute inset-x-0 bottom-0 p-3">
+                        <p
+                          className={`text-[11px] uppercase tracking-[0.22em] ${
+                            room.imageSrc ? "text-white/80" : "text-brand-800/70"
+                          }`}
+                        >
                           0{index + 1}
                         </p>
-                        <h2 className="mt-2 text-2xl text-brand-900">
+                        <h2
+                          className={`mt-2 text-2xl ${room.imageSrc ? "text-white" : "text-brand-900"}`}
+                        >
                           {getLocalizedWithItalianFallback(locale, room.nameIt, room.nameEn)}
                         </h2>
                       </div>
@@ -206,7 +275,7 @@ export function HomePage({ locale }: HomePageProps) {
               </p>
             </div>
             <Link
-              href={`/${locale}/rooms`}
+              href={buildLocalizedPath(locale, "/rooms")}
               className="inline-flex w-fit items-center rounded-full border border-stone-300 px-5 py-3 text-sm font-semibold text-brand-900 transition hover:border-brand-500 hover:text-brand-700"
             >
               {content.roomCta}
@@ -223,7 +292,7 @@ export function HomePage({ locale }: HomePageProps) {
           <h3 className="mt-3 text-3xl leading-tight text-white">{content.bookingTitle}</h3>
           <p className="mt-4 max-w-md text-base leading-7 text-brand-100/90">{content.bookingBody}</p>
           <Link
-            href={`/${locale}/booking`}
+            href={buildLocalizedPath(locale, "/booking")}
             className="mt-6 inline-flex items-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-900 transition hover:bg-brand-100"
           >
             {content.bookingCta}
@@ -247,12 +316,11 @@ export function HomePage({ locale }: HomePageProps) {
               {content.assistantMockReply}
             </div>
           </div>
-          <Link
-            href="#assistant"
+          <HomeAssistantActions
+            label={content.assistantCta}
+            mode="chat"
             className="mt-6 inline-flex items-center rounded-full border border-brand-300 px-5 py-3 text-sm font-semibold text-brand-900 transition hover:border-brand-500 hover:text-brand-700"
-          >
-            {content.assistantCta}
-          </Link>
+          />
         </article>
       </section>
     </div>

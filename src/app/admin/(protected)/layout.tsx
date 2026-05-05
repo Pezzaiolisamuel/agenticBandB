@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { adminNavigation } from "@/config/navigation";
@@ -15,7 +16,16 @@ export default async function ProtectedAdminLayout({
       <div className="mx-auto grid min-h-screen max-w-7xl gap-8 px-6 py-8 lg:grid-cols-[240px_1fr]">
         <aside className="rounded-3xl bg-brand-900 p-6 text-white">
           <p className="text-sm uppercase tracking-[0.2em] text-brand-200">Admin</p>
-          <h1 className="mt-3 text-3xl">Moncrivello B&B</h1>
+          <div className="mt-3 flex items-center gap-3">
+            <Image
+              src="/logo.png"
+              alt="CLUB66-B&B"
+              width={44}
+              height={44}
+              className="h-11 w-11 rounded-full object-cover"
+            />
+            <h1 className="text-3xl">CLUB66-B&B</h1>
+          </div>
           <nav className="mt-8 flex flex-col gap-2">
             {adminNavigation.map((item) => (
               <Link

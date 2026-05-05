@@ -51,6 +51,12 @@ export default async function CookiePolicyPage({ params }: CookiePolicyPageProps
             "Placeholder revisione professionale: inserire l'elenco definitivo dei cookie, la durata, la base giuridica e gli eventuali fornitori terzi dopo verifica legale.",
           ],
         },
+        {
+          title: "Informazione CLUB66",
+          body: [
+            "Il bar CLUB66 e` un circolo ricreativo ARCI con accesso limitato ai membri. Una tessera di iscrizione puo` essere richiesta all interno del bar.",
+          ],
+        },
       ],
     },
     en: {
@@ -87,6 +93,12 @@ export default async function CookiePolicyPage({ params }: CookiePolicyPageProps
           body: [
             "Admin contact placeholder: insert the official privacy and cookie contact here, for example cookies@example.com.",
             "Professional review placeholder: add the final cookie list, duration, legal basis, and any third-party providers after legal review.",
+          ],
+        },
+        {
+          title: "CLUB66 membership information",
+          body: [
+            "The restaurant CLUB66 is an ARCI recreational club with access limited to members. Membership card inside the bar.",
           ],
         },
       ],

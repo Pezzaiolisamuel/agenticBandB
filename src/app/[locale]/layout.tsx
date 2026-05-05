@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ChatWidget } from "@/components/chat-widget";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
-import { VoiceAssistant } from "@/components/voice/VoiceAssistant";
+import { PublicSiteShell } from "@/components/public-site-shell";
 import { getDictionary, isSupportedLocale, type Locale } from "@/lib/locales";
 
 type LocaleLayoutProps = {
@@ -43,15 +40,8 @@ export default async function LocaleLayout({
   }
 
   const currentLocale = locale as Locale;
-  const dictionary = getDictionary(currentLocale);
 
   return (
-    <>
-      <SiteHeader locale={currentLocale} dictionary={dictionary} />
-      <main>{children}</main>
-      <SiteFooter locale={currentLocale} dictionary={dictionary} />
-      <VoiceAssistant locale={currentLocale} />
-      <ChatWidget locale={currentLocale} />
-    </>
+    <PublicSiteShell locale={currentLocale}>{children}</PublicSiteShell>
   );
 }

@@ -43,9 +43,9 @@ export type Dictionary = {
 const dictionaries: Record<Locale, Dictionary> = {
   it: {
     site: {
-      name: "Moncrivello B&B",
-      tagline: "Ospitalita` bilingue per soggiorni curati",
-      description: "Base Next.js per una piattaforma B&B in italiano e inglese.",
+      name: "Il B&B di MONCRIVELLO",
+      tagline: "Noi lo chiamiamo casa.",
+      description: "Piattaforma bilingue per soggiorni, richieste e prenotazioni di CLUB66-B&B.",
     },
     navigation: {
       home: "Home",
@@ -199,9 +199,9 @@ const dictionaries: Record<Locale, Dictionary> = {
   },
   en: {
     site: {
-      name: "Moncrivello B&B",
-      tagline: "Bilingual hospitality for thoughtful stays",
-      description: "Next.js foundation for an Italian and English B&B platform.",
+      name: "CLUB66-B&B",
+      tagline: "We just call it Home.",
+      description: "Bilingual platform for stays, requests, and bookings at CLUB66-B&B.",
     },
     navigation: {
       home: "Home",
@@ -369,6 +369,34 @@ export function getLocaleFromValue(value: string | null | undefined): Locale {
   }
 
   return defaultLocale;
+}
+
+export function stripLocalePrefix(pathname: string) {
+  if (!pathname || pathname === "/") {
+    return "/";
+  }
+
+  for (const locale of locales) {
+    if (pathname === `/${locale}`) {
+      return "/";
+    }
+
+    if (pathname.startsWith(`/${locale}/`)) {
+      return pathname.slice(locale.length + 1) || "/";
+    }
+  }
+
+  return pathname;
+}
+
+export function buildLocalizedPath(locale: Locale, pathname = "/") {
+  const normalizedPath = stripLocalePrefix(pathname);
+
+  if (locale === defaultLocale) {
+    return normalizedPath;
+  }
+
+  return normalizedPath === "/" ? `/${locale}` : `/${locale}${normalizedPath}`;
 }
 
 export function getLocalizedWithItalianFallback(
